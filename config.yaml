@@ -1,0 +1,17 @@
+cookie:
+  expiry_days: 30
+  key: some_random_signature_key_lipi
+  name: lipi_trade_cookie
+credentials:
+  usernames:
+    lipi:
+      email: lipi@example.com
+      name: Lipi
+      password: $2b$12$vCo0flbkkIBIDIw6ReQOvOE/N5jJkNhCDxqprLDbUNUwMIxp0T9DC
+    niloy:
+      email: niloy@example.com
+      name: Niloy
+      password: $2b$12$d20I8hnnG7cHSD3tw/qCI.5NlkVrV9tzg358.IlLumdNd8m8ZgDW2
+pre-authorized:
+  emails:
+  - niloy@example.com

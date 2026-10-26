@@ -1,0 +1,14 @@
+[
+  {
+    "id": 1,
+    "symbol": "btcusd",
+    "side": "Buy",
+    "entry": 85500.0,
+    "exit": 85800.0,
+    "stop_loss": 85300.0,
+    "take_profit": 86000.0,
+    "pnl": 12.0,
+    "notes": "test trade",
+    "date": "2026-10-09 12:16"
+  }
+]
