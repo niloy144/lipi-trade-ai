@@ -1,41 +1,40 @@
+
 import feedparser
 import requests
-import urllib.parse
+from urllib.parse import quote
 
 def fetch_news(category="Crypto", limit=5):
-    # ক্যাটাগরি অনুযায়ী নির্ভরযোগ্য RSS ফিডের লিস্ট
+    # ক্যাটাগরি অনুযায়ী নির্ভরযোগ্য RSS ফিড (Google News দেওয়া হয়েছে যাতে ক্লাউডে ব্লক না করে)
     feeds = {
         "Crypto": [
             "https://www.coindesk.com/arc/outboundfeeds/rss/",
-            "https://cointelegraph.com/rss"
+            "https://news.google.com/rss/search?q=cryptocurrency+when:1d&hl=en-US&gl=US&ceid=US:en"
         ],
         "Forex": [
-            "https://www.fxstreet.com/rss/news",
-            "https://www.dailyfx.com/feeds/all"
+            "https://news.google.com/rss/search?q=forex+trading+OR+currency+market+when:1d&hl=en-US&gl=US&ceid=US:en"
         ],
         "Stocks": [
-            "https://finance.yahoo.com/news/rssindex",
-            "https://www.cnbc.com/id/100003114/device/rss/rss.html"
+            "https://news.google.com/rss/search?q=stock+market+OR+wall+street+when:1d&hl=en-US&gl=US&ceid=US:en"
         ],
         "Global": [
             "https://feeds.bbci.co.uk/news/business/rss.xml",
-            "https://www.reutersagency.com/feed/?best-topics=business-finance&post_type=best"
+            "https://news.google.com/rss/search?q=global+economy+when:1d&hl=en-US&gl=US&ceid=US:en"
         ]
     }
 
-    # ডিফল্ট হিসেবে Crypto ফিড নেবে
     urls = feeds.get(category, feeds["Crypto"])
     
-    # ব্রাউজারের মতো একটি হেডার পাঠানো, যাতে ওয়েবসাইট বট ভেবে ব্লক না করে
     headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
     }
 
     articles = []
     
     for url in urls:
+        if len(articles) >= limit:
+            break
+            
         try:
-            # রিকোয়েস্ট পাঠানো
             response = requests.get(url, headers=headers, timeout=10)
             if response.status_code == 200:
                 feed = feedparser.parse(response.content)
@@ -44,25 +43,32 @@ def fetch_news(category="Crypto", limit=5):
                     if len(articles) >= limit:
                         break
                     
-                    # নিউজের ডেসক্রিপশন পরিষ্কার করা
+                    # ডেসক্রিপশন ক্লিন করা
                     desc = entry.get("summary", "")
+                    # Google News-এর ডেসক্রিপশনে অনেক সময় HTML ট্যাগ থাকে, সেগুলো পরিষ্কার করা
+                    import re
+                    desc = re.sub('<[^<]+?>', '', desc)
                     if len(desc) > 300:
                         desc = desc[:300] + "..."
                         
                     articles.append({
-                        "source": feed.feed.get("title", "News"),
+                        "source": entry.get("source", {}).get("title", feed.feed.get("title", "News")),
                         "title": entry.get("title", ""),
                         "description": desc,
                         "link": entry.get("link", ""),
                         "published": entry.get("published", "")
                     })
-            
-            # যদি পর্যাপ্ত নিউজ পাওয়া যায়, তবে লুপ থামিয়ে দেবে
-            if len(articles) >= limit:
-                break
-                
         except Exception as e:
             print(f"Error fetching from {url}: {e}")
             continue
+
+    if not articles:
+        articles.append({
+            "source": "System",
+            "title": "No news available at the moment.",
+            "description": "Please try changing the category or check back later.",
+            "link": "#",
+            "published": ""
+        })
 
     return articles[:limit]
