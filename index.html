@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Zapline — Trade Smarter, Faster, Safer</title>
+<style>
+  :root {
+    --bg: #000; --text: #f7f7f8; --muted: #8b8988; --violet: #9312ff;
+    --violet-glow: rgba(147, 18, 255, 0.45); --btn-start: linear-gradient(90deg, #a020ff, #7a1cf8);
+    --green: #45b558; --red: #f03b2a; --stage-w: 1672px; --stage-h: 941px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 100%; height: 100%; background: var(--bg); color: var(--text);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif; overflow: hidden; }
+  body { font-weight: 400; line-height: 1.5; }
+  .stage { position: relative; width: 100%; max-width: var(--stage-w); min-height: 100vh;
+    margin: 0 auto; overflow: visible; display: flex; flex-direction: column; }
+  body { overflow-y: auto; overflow-x: hidden; }
+  .sky { position: fixed; inset: 0; width: 100%; height: 100%; background: var(--bg); overflow: hidden; z-index: 0; pointer-events: none; }
+  canvas#stars { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+  canvas#rim { position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+    width: 100%; height: 717px; pointer-events: none; display: none; z-index: 1; }
+  video#glow { position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+    width: 1672px; height: 717px; object-fit: cover; mix-blend-mode: screen;
+    opacity: 0; pointer-events: none; z-index: 2; }
+  .hero, .dashboard-wrap { z-index: 5; position: relative; }
+  .dashboard-wrap { flex: 1; display: flex; flex-direction: column; padding-bottom: 40px; }
+  @media (max-width: 900px), (orientation: portrait) {
+    .stage { width: 100%; min-height: 100vh; transform: none !important; }
+    body { overflow-y: auto; }
+    video#glow { display: none; } canvas#rim { display: block; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    video#glow { display: none; } canvas#rim { display: block; opacity: 0.6; }
+  }
+  nav { position: absolute; top: 0; left: 0; width: 100%; height: 88px;
+    display: flex; align-items: center; justify-content: space-between; padding: 0 60px; z-index: 10; }
+  .logo { display: flex; align-items: center; gap: 10px; color: var(--violet);
+    font-weight: 700; font-size: 20px; letter-spacing: -0.5px; cursor: pointer; }
+  .bolt { width: 26px; height: 26px; fill: var(--violet);
+    filter: drop-shadow(0 0 8px var(--violet-glow)); }
+  .nav-menu { display: flex; gap: 28px; align-items: center; }
+  .nav-menu a { color: var(--muted); text-decoration: none; font-size: 14px; font-weight: 500; transition: color 0.2s; }
+  .nav-menu a:hover { color: var(--text); }
+  .nav-menu a.active { color: var(--text); background: rgba(255,255,255,0.06);
+    padding: 6px 14px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.12); }
+  .nav-get-started { background: var(--btn-start); color: #fff; border: none;
+    padding: 10px 24px; border-radius: 999px; font-weight: 600; font-size: 14px;
+    cursor: pointer; box-shadow: 0 0 14px var(--violet-glow);
+    transition: transform 0.2s, box-shadow 0.2s; }
+  .nav-get-started:hover { transform: translateY(-1px); box-shadow: 0 0 24px var(--violet-glow); }
+  @media (max-width: 900px), (orientation: portrait) {
+    nav { height: 64px; padding: 0 20px; position: sticky; top: 0; background: rgba(0,0,0,0.8); }
+    .nav-menu { display: none; } .nav-get-started { padding: 8px 16px; font-size: 13px; }
+  }
+  .hero {
+    position: relative; z-index: 5; padding-top: 120px; text-align: center;
+  }
+  @media (min-width: 901px) and (orientation: landscape) {
+    .hero { padding-top: 120px; }
+    .dashboard { margin: 60px auto 0 auto; }
+  }
+  @media (max-width: 900px), (orientation: portrait) {
+    .hero { padding-top: 90px; }
+  }
+  .headline {
+    font-size: 84px; font-weight: 700; line-height: 1.05; letter-spacing: -2px;
+    margin-bottom: 24px; color: var(--text); display: block;
+  }
+  .headline .brand {
+    background: var(--btn-start);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .lede { font-size: 18px; color: var(--muted); max-width: 760px;
+    margin: 0 auto 36px auto; font-weight: 400; }
+  .hero-buttons {
+    display: flex; gap: 16px; justify-content: center; margin-bottom: 80px;
+  }
+  .btn-get-started {
+    background: var(--btn-start); color: #fff; border: none;
+    padding: 16px 40px; border-radius: 999px; font-weight: 600;
+    font-size: 17px; cursor: pointer;
+    box-shadow: 0 0 20px var(--violet-glow);
+    transition: transform 0.2s, box-shadow 0.2s, filter 0.2s;
+  }
+  .btn-get-started:hover {
+    transform: translateY(-2px); box-shadow: 0 0 32px var(--violet-glow);
+    filter: brightness(1.1);
+  }
+  .btn-learn-more {
+    background: rgba(255,255,255,0.05); color: var(--text);
+    border: 1px solid rgba(255,255,255,0.18); padding: 16px 40px;
+    border-radius: 999px; font-weight: 600; font-size: 17px;
+    cursor: pointer; transition: transform 0.2s, border-color 0.2s, background 0.2s;
+  }
+  .btn-learn-more:hover {
+    border-color: var(--violet); background: rgba(147,18,255,0.15);
+    transform: translateY(-2px);
+  }
+  @media (max-width: 900px), (orientation: portrait) {
+    .hero { padding-top: 90px; padding-left: 20px; padding-right: 20px; text-align: center; }
+    .headline { font-size: 56px; line-height: 1.15; margin-bottom: 16px; }
+    .lede { font-size: 16px; margin-bottom: 24px; }
+    .hero-buttons { flex-direction: column; align-items: center; margin-bottom: 40px; }
+    .btn-get-started, .btn-learn-more { width: 100%; max-width: 300px;
+      padding: 14px 24px; font-size: 16px; }
+  }
+  .dashboard-wrap {
+    position: relative; z-index: 6; margin-top: 0;
+  }
+  .dashboard-glow {
+    position: absolute; top: -20px; left: 50%; transform: translateX(-50%);
+    width: 1204px; height: 60px;
+    background: url('https://d2ol7oe51mr4n9.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/e0e14572-12e1-4c08-b471-a21521844945.png') center center no-repeat;
+    background-size: contain; mix-blend-mode: screen; opacity: 1;
+    pointer-events: none; z-index: 1;
+  }
+  .dashboard {
+    width: 1204px; max-width: 100%; margin: 60px auto 0 auto;
+    background: rgba(16, 16, 18, 0.85);
+    border: 1px solid rgba(147, 18, 255, 0.35); border-radius: 20px;
+    box-shadow: 0 0 60px rgba(147, 18, 255, 0.15); backdrop-filter: blur(12px);
+    overflow: hidden; position: relative; opacity: 1; transform: translateY(0);
+  }
+  .dashboard::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--violet), transparent);
+    opacity: 0.9;
+  }
+  .dashboard-inner {
+    display: flex; flex-direction: column; height: 700px; padding: 28px 32px;
+  }
+  .dashboard-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 20px; padding-bottom: 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+  .dashboard-title { font-size: 20px; font-weight: 600; color: var(--text); }
+  .dashboard-sub { font-size: 13px; color: var(--muted); }
+  .dashboard-body { display: flex; gap: 20px; flex: 1; overflow: hidden; }
+  .sidebar {
+    width: 260px; flex-shrink: 0;
+    background: rgba(10, 10, 11, 0.6);
+    border: 1px solid rgba(255,255,255,0.06); border-radius: 12px;
+    padding: 16px; display: flex; flex-direction: column; gap: 10px;
+    opacity: 1; transform: translateY(0);
+  }
+  .sidebar-chip {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px; border-radius: 10px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    color: var(--muted); font-size: 13px; font-weight: 500;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .sidebar-chip:hover {
+    border-color: var(--violet); color: var(--text);
+    background: rgba(147,18,255,0.10);
+  }
+  .sidebar-chip.active {
+    background: var(--violet); color: #fff; border-color: var(--violet);
+  }
+  .sidebar-chip .dot {
+    width: 8px; height: 8px; border-radius: 50%; background: var(--green); flex-shrink: 0;
+  }
+  .sidebar-chip .dot.alert { background: var(--red); }
+  .main-content {
+    flex: 1; min-width: 0;
+    background: rgba(8, 8, 9, 0.6);
+    border: 1px solid rgba(255,255,255,0.06); border-radius: 12px;
+    padding: 20px; overflow: hidden; display: flex;
+    flex-direction: column; opacity: 1; transform: translateY(0);
+  }
+  .streamlit-frame {
+    width: 100%; height: 100%; border: none; border-radius: 8px; background: #000;
+  }
+  .stats {
+    display: flex; gap: 16px; margin-bottom: 16px;
+    opacity: 1; transform: translateY(0);
+  }
+  .stat {
+    flex: 1; background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 16px;
+  }
+  .stat-value { font-size: 20px; font-weight: 700; color: var(--text); }
+  .stat-label { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  @media (max-width: 900px), (orientation: portrait) {
+    .dashboard-body { flex-direction: column; gap: 14px; height: auto; }
+    .sidebar { width: 100%; flex-direction: row; overflow-x: auto; padding: 10px; }
+    .sidebar-chip { flex-shrink: 0; white-space: nowrap; }
+    .main-content { flex: none; height: 60vh; min-height: 400px; }
+    .dashboard { margin: 0 16px 40px 16px; border-radius: 16px; }
+    .dashboard-glow { width: 100%; left: 0; transform: none; height: 40px;
+      top: -10px; background-size: 100% auto; }
+    .stats { display: none; }
+    .dashboard-inner { padding: 16px 20px; }
+    .dashboard-header { margin-bottom: 14px; }
+  }
+  .lede, .hero-buttons, .dashboard-glow, .dashboard, .sidebar, .stats, .main-content, .headline, .entering {
+    opacity: 1;
+  }
+  nav.enter { animation: navFadeDown 0.8s ease forwards; }
+  .headline.enter { animation: wipeUp 0.9s ease forwards; }
+  .lede.enter { animation: fadeUp 0.8s ease 0.3s forwards; }
+  .hero-buttons.enter { animation: fadeUp 0.8s ease 0.5s forwards; }
+  .dashboard-glow.enter { animation: fadeIn 0.8s ease 1.0s forwards; }
+  .dashboard.enter { animation: dashboardRise 1.0s ease 0.9s forwards; }
+  @keyframes navFadeDown {
+    from { opacity: 0; transform: translateY(-20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes wipeUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes dashboardRise {
+    from { opacity: 0; transform: translateY(40px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .sidebar-chip.enter, .stat.enter, .main-content.enter {
+    animation: fadeUp 0.6s ease forwards;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .entering, .enter { animation: none !important; opacity: 1 !important; transform: none !important; }
+  }
+  @media (prefers-reduced-motion: reduce) { video#glow { display: none !important; } }
+  .hidden { display: none !important; }
+  #launch-modal {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.85);
+    backdrop-filter: blur(8px); z-index: 100; display: none;
+    align-items: center; justify-content: center; padding: 40px;
+  }
+  #launch-modal.open { display: flex; }
+  .launch-box {
+    background: rgba(16,16,18,0.95);
+    border: 1px solid rgba(147,18,255,0.45); border-radius: 24px;
+    padding: 48px; max-width: 560px; width: 100%; text-align: center;
+    box-shadow: 0 0 80px rgba(147,18,255,0.25);
+    transform: scale(0.9); opacity: 0;
+    transition: transform 0.4s ease, opacity 0.4s ease;
+  }
+  #launch-modal.open .launch-box { transform: scale(1); opacity: 1; }
+  .launch-box h2 { font-size: 30px; margin-bottom: 12px; color: var(--text); }
+  .launch-box p { color: var(--muted); margin-bottom: 32px; font-size: 16px; }
+  .launch-box .btn-launch {
+    background: var(--btn-start); color: #fff; border: none;
+    padding: 16px 44px; border-radius: 999px; font-weight: 600;
+    font-size: 17px; cursor: pointer; box-shadow: 0 0 24px var(--violet-glow);
+  }
+  .launch-box .btn-close {
+    background: transparent; color: var(--muted);
+    border: 1px solid rgba(255,255,255,0.15); padding: 14px 40px;
+    border-radius: 999px; margin-left: 12px; font-weight: 600;
+    font-size: 16px; cursor: pointer;
+  }
+  .launch-box .btn-close:hover { border-color: var(--text); color: var(--text); }
+  iframe#streamlit-iframe {
+    width: 100%; height: 700px; border: none; border-radius: 12px; background: #000;
+  }
+  @media (max-width: 900px), (orientation: portrait) {
+    .launch-box { padding: 32px 24px; margin: 20px; }
+    .launch-box h2 { font-size: 24px; }
+    .launch-box .btn-launch, .launch-box .btn-close {
+      display: block; width: 100%; margin: 10px 0 0 0; padding: 14px 24px;
+    }
+  }
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="stage" id="stage">
+    <div class="sky">
+      <canvas id="stars"></canvas>
+      <canvas id="rim"></canvas>
+      <video id="glow" src="https://d2ol7oe51mr4n9.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/e859f229-8ebd-43fb-a5a0-58006ba75327.mp4"
+             loop muted playsinline preload="auto"></video>
+    </div>
+    <nav class="entering">
+      <div class="logo" aria-label="Zapline">
+        <svg class="bolt" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M14.5 2h-5l-1 8h3l-2 8h5l1-8h-3z"/>
+        </svg>
+        <span>Zapline</span>
+      </div>
+      <div class="nav-menu">
+        <a href="#" class="active">Home</a>
+        <a href="#">Features</a>
+        <a href="#">Zapline Advantage</a>
+        <a href="#">Referral</a>
+        <a href="#">FAQ</a>
+      </div>
+      <button class="nav-get-started" onclick="openLaunch()">Get Started</button>
+    </nav>
+    <section class="hero">
+      <h1 class="headline">Zapline <span class="brand">Trade Smarter,</span><br/>Faster, Safer.</h1>
+      <p class="lede">The first fully integrated on-chain trading experience. Execute, analyse, and automate across chains from one dark-glass dashboard.</p>
+      <div class="hero-buttons">
+        <button class="btn-get-started" onclick="openLaunch()">Get Started</button>
+        <button class="btn-learn-more">Learn More</button>
+      </div>
+    </section>
+    <div class="dashboard-wrap">
+      <div class="dashboard-glow"></div>
+      <div class="dashboard">
+        <div class="dashboard-inner">
+          <div class="dashboard-header">
+            <div>
+              <div class="dashboard-title">Lipi Trade AI</div>
+              <div class="dashboard-sub">Your existing trading tools — now inside Zapline</div>
+            </div>
+            <div style="display:flex; gap:8px; align-items:center;">
+              <span class="dot" style="width:8px;height:8px;border-radius:50%;background:var(--green);"></span>
+              <span style="font-size:12px;color:var(--muted);">Systems operational</span>
+            </div>
+          </div>
+          <div class="dashboard-body">
+            <aside class="sidebar">
+              <div class="sidebar-chip active"><span class="dot"></span>Dashboard</div>
+              <div class="sidebar-chip"><span class="dot alert"></span>Alerts</div>
+              <div class="sidebar-chip"><span class="dot"></span>News & Calendar</div>
+              <div class="sidebar-chip"><span class="dot"></span>Trading Tools</div>
+              <div class="sidebar-chip"><span class="dot"></span>Performance</div>
+              <div class="sidebar-chip"><span class="dot"></span>AI Chatbot</div>
+              <div class="sidebar-chip"><span class="dot"></span>Account</div>
+            </aside>
+            <main class="main-content">
+              <div class="stats">
+                <div class="stat"><div class="stat-value">$0.00</div><div class="stat-label">Portfolio</div></div>
+                <div class="stat"><div class="stat-value">0</div><div class="stat-label">Active Alerts</div></div>
+                <div class="stat"><div class="stat-value">—</div><div class="stat-label">Win Rate</div></div>
+                <div class="stat"><div class="stat-value">0 ms</div><div class="stat-label">Latency</div></div>
+              </div>
+              <iframe id="streamlit-iframe" class="streamlit-frame" src="about:blank" title="Lipi Trade AI"></iframe>
+            </main>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="launch-modal">
+    <div class="launch-box">
+      <h2>Launch Lipi Trade AI</h2>
+      <p>Opening your existing Streamlit dashboard inside Zapline.</p>
+      <button class="btn-launch" onclick="startApp()">Open App</button>
+      <button class="btn-close" onclick="closeLaunch()">Cancel</button>
+    </div>
+  </div>
+<script>
+  function updateStageScale() {
+    const stage = document.getElementById('stage');
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const isDesktop = vw > 900 && window.matchMedia('(orientation: landscape)').matches;
+    if (isDesktop) {
+      const s = Math.min(vw / 1672, vh / 941);
+      stage.style.setProperty('--s', s);
+    } else {
+      stage.style.removeProperty('--s');
+    }
+  }
+  window.addEventListener('resize', updateStageScale);
+  window.addEventListener('orientationchange', updateStageScale);
+  updateStageScale();
+
+  (function drawStars() {
+    const c = document.getElementById('stars');
+    const ctx = c.getContext('2d');
+    let w, h, stars = [];
+    function resize() {
+      c.width = window.innerWidth;
+      c.height = window.innerHeight;
+      w = c.width; h = c.height;
+      stars = [];
+      const count = Math.floor((w * h) / 4500);
+      for (let i = 0; i < count; i++) {
+        stars.push({ x: Math.random() * w, y: Math.random() * h,
+          r: Math.random() * 1.4, a: Math.random() * 0.8 + 0.2 });
+      }
+    }
+    function draw() {
+      ctx.clearRect(0, 0, w, h);
+      ctx.fillStyle = '#ffffff';
+      for (const s of stars) {
+        ctx.globalAlpha = s.a;
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    }
+    window.addEventListener('resize', resize);
+    resize();
+    draw();
+  })();
+
+  (function drawRim() {
+    const c = document.getElementById('rim');
+    const ctx = c.getContext('2d');
+    const isMobile = window.matchMedia('(max-width: 900px), (orientation: portrait)').matches;
+    if (isMobile) { c.style.display = 'block'; } else { c.style.display = 'none'; }
+    function resize() {
+      c.width = window.innerWidth;
+      c.height = 717;
+    }
+    function draw() {
+      const w = c.width; const h = c.height;
+      ctx.clearRect(0, 0, w, h);
+      const cx = w / 2; const cy = h * 0.55;
+      const outerR = Math.max(w, h) * 0.62;
+      const innerR = outerR * 0.78;
+      const grad = ctx.createRadialGradient(cx, cy, innerR, cx, cy, outerR);
+      grad.addColorStop(0, 'rgba(147, 18, 255, 0)');
+      grad.addColorStop(0.35, 'rgba(147, 18, 255, 0.35)');
+      grad.addColorStop(0.65, 'rgba(147, 18, 255, 0.18)');
+      grad.addColorStop(1, 'rgba(147, 18, 255, 0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(cx, cy, outerR, 0, Math.PI * 2);
+      ctx.fill();
+      const grad2 = ctx.createRadialGradient(cx, cy, innerR * 0.85, cx, cy, innerR * 1.05);
+      grad2.addColorStop(0, 'rgba(147, 18, 255, 0.5)');
+      grad2.addColorStop(1, 'rgba(147, 18, 255, 0)');
+      ctx.fillStyle = grad2;
+      ctx.beginPath();
+      ctx.arc(cx, cy, innerR * 0.95, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    window.addEventListener('resize', resize);
+    resize();
+    draw();
+  })();
+
+  (function initGlowVideo() {
+    const video = document.getElementById('glow');
+    const isDesktop = window.matchMedia('(min-width: 901px) and (orientation: landscape)').matches;
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!isDesktop || reduced) { video.style.display = 'none'; return; }
+    video.addEventListener('canplay', () => {
+      video.style.transition = 'opacity 0.8s ease';
+      video.style.opacity = 1;
+    });
+    video.addEventListener('error', () => {
+      video.style.display = 'none';
+      document.getElementById('rim').style.display = 'block';
+    });
+    video.play().catch(() => {});
+  })();
+
+  function initEntrance() {
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const elems = [
+      document.querySelector('nav'),
+      document.querySelector('.headline'),
+      document.querySelector('.lede'),
+      document.querySelector('.hero-buttons'),
+      document.querySelector('.dashboard-glow'),
+      document.querySelector('.dashboard'),
+      ...document.querySelectorAll('.sidebar-chip'),
+      ...document.querySelectorAll('.stat'),
+      document.querySelector('.main-content')
+    ];
+    if (reduced) {
+      elems.forEach(el => { if (el) { el.classList.remove('entering','enter'); el.style.opacity='1'; el.style.transform='none'; } });
+      return;
+    }
+    const sequence = [
+      { el: document.querySelector('nav'), cls: 'enter' },
+      { el: document.querySelector('.headline'), cls: 'enter' },
+      { el: document.querySelector('.lede'), cls: 'enter', delay: 300 },
+      { el: document.querySelector('.hero-buttons'), cls: 'enter', delay: 500 },
+      { el: document.querySelector('.dashboard-glow'), cls: 'enter', delay: 1000 },
+      { el: document.querySelector('.dashboard'), cls: 'enter', delay: 900 }
+    ];
+    sequence.forEach(({ el, cls, delay = 0 }) => {
+      if (!el) return;
+      el.classList.remove('entering');
+      setTimeout(() => el.classList.add(cls), delay);
+    });
+    const chips = document.querySelectorAll('.sidebar-chip');
+    const stats = document.querySelectorAll('.stat');
+    const main = document.querySelector('.main-content');
+    [...chips, ...stats, main].forEach((el, i) => {
+      if (!el) return;
+      el.classList.remove('entering');
+      setTimeout(() => el.classList.add('enter'), 1100 + i * 80);
+    });
+  }
+  requestAnimationFrame(() => { setTimeout(initEntrance, 100); });
+
+  const launchModal = document.getElementById('launch-modal');
+  const streamlitIframe = document.getElementById('streamlit-iframe');
+
+  function openLaunch() {
+    launchModal.classList.add('open');
+  }
+
+  function closeLaunch() {
+    launchModal.classList.remove('open');
+  }
+
+  function startApp() {
+    const STREAMLIT_URL = 'http://localhost:8502';
+    streamlitIframe.src = STREAMLIT_URL;
+    closeLaunch();
+  }
+
+  launchModal.addEventListener('click', (e) => {
+    if (e.target === launchModal) closeLaunch();
+  });
+
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeLaunch();
+  });
+</script>
+</body>
+</html>

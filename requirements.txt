@@ -1,0 +1,12 @@
+streamlit
+yfinance
+groq
+python-dotenv
+PyYAML
+streamlit-authenticator
+altair
+requests
+pytz
+feedparser
+pandas
+bcrypt
